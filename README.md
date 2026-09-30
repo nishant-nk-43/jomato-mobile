@@ -23,6 +23,7 @@ Jomato is an unofficial, reverse-engineered client for Zomato. It delivers utili
 ## Features
 
 - **Instant Food Rescue Notifications**: Monitors Food Rescue events in real time within your area. Delivers immediate alerts upon listing of a rescue basket by a restaurant. Allows direct access to the deal via notification tap, ensuring timely acquisition before depletion.
+- **Privacy-First & Hardware-Backed Security**: Sensitive data (OAuth tokens, user IDs, delivery addresses, and GPS coordinates) is encrypted with AES-256-GCM backed by Android KeyStore. All background account queries and external telemetry are disabled by default with full user consent controls.
 
 ---
 
@@ -118,26 +119,36 @@ This project is intended for **educational purposes only**.
 - Usage of this software is at your own discretion and risk
 - The developer assumes **no responsibility** for any account restrictions or bans imposed by the official service provider
 
----
-
-## Analytics & Privacy
-
-Jomato collects minimal anonymous analytics to understand how many people are using the app and which versions are actively in use.
-
-**What is collected on every app open:**
-- A randomly generated install ID (16 character hex string, generated on first launch)
-- App version name and version code
-- Android version
-
-**What is NOT collected:**
-- No personal information whatsoever
-- No location
-- No usage patterns beyond app open
-- The install ID cannot be traced back to you
-
-**All user data is saved locally. Jomato does not have any backend.**
-
-Analytical data is stored on Cloudflare D1 and is used solely to display aggregate stats (total installs, active users, version distribution). The install ID resets on app reinstall.
-
-
+## Security & Privacy
+ 
+Jomato is built with **Privacy by Default**. You have granular control over what data is stored, queried, and shared.
+ 
+### 1. Hardware-Backed Local Encryption
+All sensitive data stored locally on your device is protected using **AES-256-GCM** authenticated encryption with keys generated inside the **Android KeyStore** (hardware-backed TEE / StrongBox):
+- **Authentication Tokens**: OAuth `access_token` and `refresh_token` are stored in encrypted format.
+- **Account Identifiers**: Zomato User ID and display name are encrypted.
+- **Addresses & Geolocation**: Saved delivery address labels, street addresses, and exact GPS coordinates (`lat`, `lng`) are encrypted.
+- **Messaging Credentials**: Ephemeral MQTT broker credentials (`hedwig.zomato.com`) are encrypted.
+- **Order History**: Claimed Food Rescue order details and receipts are encrypted.
+ 
+Even if the device is inspected, rooted, or backed up, your stored credentials cannot be read in plaintext.
+ 
+### 2. Account Protection & Background Query Consent
+- **Core Alerting**: The core feature of Jomato (instant push notifications for cancelled food rescue deals) listens passively to Zomato's real-time MQTT message stream (`ssl://hedwig.zomato.com:443`). It does **not** poll your account.
+- **Optional Claim Verification (Disabled by Default)**: When an order is claimed in your subzone, Jomato can optionally query Zomato's order summary API (`/gw/order/order_summary`) with your token to verify if you were the buyer and calculate your money saved.
+- **Consent Guard**: This background querying is **OFF by default** to eliminate unnecessary API requests against your account. You can enable or disable this anytime in **Privacy & Data Sharing** settings.
+ 
+### 3. Third-Party Telemetry & Data Sharing (Opt-In Only)
+All third-party data sharing is **disabled by default**:
+ 
+| Telemetry | Destination | Data Sent | Default State |
+| :--- | :--- | :--- | :--- |
+| **App Launch Analytics** | `logs.jomato-mobile.workers.dev` | Random `install_id`, app version, Android OS version | **OFF (Opt-in)** |
+| **Order Savings Metrics** | `zomato-food-rescue.jomato-mobile.workers.dev` | Zomato Order ID, total cart value, and amount paid | **OFF (Opt-in)** |
+ 
+- **In-App Controls**: Access **Dashboard > Privacy & Data Sharing** at any time to toggle each telemetry option independently.
+- **One-Tap Opt-Out**: Tap **"Disable All Telemetry & Queries"** to immediately block all external pings and background checks.
+- **Data Purge**: Tap **"Clear Diagnostic Logs & Cached Orders"** to delete stored logs and past order records from local storage.
+ 
 </div>
+

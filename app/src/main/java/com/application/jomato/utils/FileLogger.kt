@@ -19,7 +19,8 @@ object FileLogger {
     private const val TRIM_KEEP_BYTES = 1024 * 1024
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
-    private val TOKEN_PATTERN = Regex("(?i)(token|key|auth)=([\\w\\-.]+)?")
+    private val TOKEN_PATTERN = Regex("(?i)(token|key|auth|password|refresh_token|access_token)(=|:\"?|:)\\s*([\\w\\-.]+)?")
+    private val BEARER_PATTERN = Regex("(?i)bearer\\s+[\\w\\-.]+")
     private val PHONE_PATTERN = Regex("\\b\\d{10}\\b")
     private val OTP_PATTERN = Regex("\\b\\d{6}\\b")
 
@@ -50,9 +51,11 @@ object FileLogger {
             "******${v.takeLast(4)}"
         }
         output = OTP_PATTERN.replace(output, "******")
+        output = BEARER_PATTERN.replace(output, "Bearer ...[REDACTED]...")
         output = TOKEN_PATTERN.replace(output) { m ->
             val key = m.groupValues[1]
-            "$key=...[REDACTED]..."
+            val sep = m.groupValues[2]
+            "$key$sep...[REDACTED]..."
         }
         return output
     }

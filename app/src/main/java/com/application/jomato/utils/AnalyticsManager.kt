@@ -24,6 +24,11 @@ object AnalyticsManager {
             return
         }
 
+        if (!Prefs.isAppAnalyticsEnabled(context)) {
+            FileLogger.log(context, "AnalyticsManager", "pingAppOpen skipped: user has not enabled app analytics")
+            return
+        }
+
         withContext(Dispatchers.IO) {
             try {
                 val installId = Prefs.getInstallId(context)
@@ -58,6 +63,11 @@ object AnalyticsManager {
         totalCart: Double,
         totalPaid: Double
     ) {
+        if (!Prefs.isOrderTelemetryEnabled(context)) {
+            FileLogger.log(context, "AnalyticsManager", "pingFoodRescue skipped: user has not enabled order metrics sharing")
+            return
+        }
+
         withContext(Dispatchers.IO) {
             try {
                 val installId = Prefs.getInstallId(context)

@@ -44,6 +44,43 @@ object Prefs {
         _themeMode.value = prefs(context).getString(KEY_THEME_MODE, "system") ?: "system"
     }
 
+    private const val KEY_ENABLE_APP_ANALYTICS = "enable_app_analytics"
+    private const val KEY_ENABLE_ORDER_TRACKING = "enable_order_tracking"
+    private const val KEY_ENABLE_ORDER_TELEMETRY = "enable_order_telemetry"
+    private const val KEY_PRIVACY_ONBOARDING_COMPLETED = "privacy_onboarding_completed"
+
+    /** Anonymous App Open Analytics (Default: false / Opt-in) */
+    fun isAppAnalyticsEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_ENABLE_APP_ANALYTICS, false)
+
+    fun setAppAnalyticsEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_ENABLE_APP_ANALYTICS, enabled).apply()
+    }
+
+    /** Consent for background querying of order summaries to calculate savings (Default: false / Opt-in) */
+    fun isOrderTrackingConsentGranted(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_ENABLE_ORDER_TRACKING, false)
+
+    fun setOrderTrackingConsent(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_ENABLE_ORDER_TRACKING, enabled).apply()
+    }
+
+    /** Consent for sharing order savings and Order IDs with external metrics worker (Default: false / Opt-in) */
+    fun isOrderTelemetryEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_ENABLE_ORDER_TELEMETRY, false)
+
+    fun setOrderTelemetryEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_ENABLE_ORDER_TELEMETRY, enabled).apply()
+    }
+
+    /** Whether the user has seen and completed the initial privacy onboarding notice */
+    fun isPrivacyOnboardingCompleted(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_PRIVACY_ONBOARDING_COMPLETED, false)
+
+    fun setPrivacyOnboardingCompleted(context: Context, completed: Boolean) {
+        prefs(context).edit().putBoolean(KEY_PRIVACY_ONBOARDING_COMPLETED, completed).apply()
+    }
+
     fun cycleThemeMode(context: Context) {
         val next = when (_themeMode.value) {
             "system" -> "dark"

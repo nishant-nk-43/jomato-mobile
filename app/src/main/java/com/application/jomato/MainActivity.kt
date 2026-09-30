@@ -48,6 +48,7 @@ fun JomatoApp() {
 
     var integrityResult by remember { mutableStateOf<IntegrityResult?>(null) }
     var showIntegrityDialog by remember { mutableStateOf(false) }
+    var showPrivacyConsentDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         Prefs.loadThemeMode(context)
@@ -66,8 +67,14 @@ fun JomatoApp() {
             if (fail.strict) return@LaunchedEffect
         }
 
-        scope.launch(Dispatchers.IO) {
-            AnalyticsManager.pingAppOpen(context)
+        if (!Prefs.isPrivacyOnboardingCompleted(context)) {
+            showPrivacyConsentDialog = true
+        }
+
+        if (Prefs.isAppAnalyticsEnabled(context)) {
+            scope.launch(Dispatchers.IO) {
+                AnalyticsManager.pingAppOpen(context)
+            }
         }
 
         val migrated = withContext(Dispatchers.IO) {
@@ -98,10 +105,21 @@ fun JomatoApp() {
         )
     }
 
+    if (showPrivacyConsentDialog) {
+        com.application.jomato.ui.PrivacyConsentDialog(
+            onDismiss = { showPrivacyConsentDialog = false },
+            onCustomize = {
+                showPrivacyConsentDialog = false
+                navController.navigate("privacy_settings")
+            }
+        )
+    }
+
     NavHost(navController = navController, startDestination = "splash") {
         composable("splash") { SplashScreen() }
         composable("dashboard") { DashboardScreen(navController) }
         composable("privacy_faqs") { PrivacyFaqScreen(navController) }
+        composable("privacy_settings") { com.application.jomato.ui.PrivacySettingsScreen(navController) }
 
         Entity.entries.forEach { entity ->
             composable(entity.loginHandler.route) {

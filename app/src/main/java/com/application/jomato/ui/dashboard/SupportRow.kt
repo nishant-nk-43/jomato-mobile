@@ -75,9 +75,9 @@ fun SupportRow(navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PrivacyFaqRow(navController: NavController) {
+fun PrivacySettingsRow(navController: NavController) {
     Card(
-        onClick = { navController.navigate("privacy_faqs") },
+        onClick = { navController.navigate("privacy_settings") },
         colors = CardDefaults.cardColors(containerColor = JomatoTheme.Background),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RoundedCornerShape(8.dp),
@@ -97,13 +97,13 @@ fun PrivacyFaqRow(navController: NavController) {
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Privacy & FAQs",
+                    text = "Privacy & Data Sharing",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = JomatoTheme.BrandBlack,
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "Data and privacy questions",
+                    text = "Control encryption, queries & telemetry",
                     style = MaterialTheme.typography.bodySmall,
                     color = JomatoTheme.TextGray,
                     fontSize = 12.sp
@@ -118,3 +118,4 @@ fun PrivacyFaqRow(navController: NavController) {
         }
     }
 }
+

@@ -347,6 +347,12 @@ class FoodRescueService : Service() {
             return
         }
 
+        // Only query order summary if user has explicitly granted consent to track order claims
+        if (!com.application.jomato.Prefs.isOrderTrackingConsentGranted(this)) {
+            FileLogger.log(this, "Logic", "order_claimed: skipped checking $identifier (user consent not granted)")
+            return
+        }
+
         FileLogger.log(this, "Logic", "order_claimed: checking identifier $identifier")
 
         val sessionId = ZomatoManager.getFoodRescueSessionId(this)

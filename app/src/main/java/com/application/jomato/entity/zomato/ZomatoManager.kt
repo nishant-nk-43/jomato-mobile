@@ -31,21 +31,27 @@ object ZomatoManager : BaseSessionManager<ZomatoSession>() {
     override fun saveSession(context: Context, session: ZomatoSession) {
         FileLogger.log(context, TAG, "Saving session: ${session.sessionId} | user: ${session.userName}")
         prefs(context).edit()
-            .putString(sessionKey(session.sessionId, "access_token"), session.accessToken)
-            .putString(sessionKey(session.sessionId, "refresh_token"), session.refreshToken)
-            .putString(sessionKey(session.sessionId, "user_name"), session.userName)
-            .putString(sessionKey(session.sessionId, "user_id"), session.userId)
+            .putString(sessionKey(session.sessionId, "access_token"), com.application.jomato.utils.SecureStorage.encrypt(session.accessToken))
+            .putString(sessionKey(session.sessionId, "refresh_token"), com.application.jomato.utils.SecureStorage.encrypt(session.refreshToken))
+            .putString(sessionKey(session.sessionId, "user_name"), com.application.jomato.utils.SecureStorage.encrypt(session.userName))
+            .putString(sessionKey(session.sessionId, "user_id"), com.application.jomato.utils.SecureStorage.encrypt(session.userId))
             .putLong(sessionKey(session.sessionId, "created_at"), session.createdAt)
             .apply()
     }
 
     override fun getSession(context: Context, sessionId: String): ZomatoSession? {
         val p = prefs(context)
-        val accessToken = p.getString(sessionKey(sessionId, "access_token"), null) ?: return null
-        val refreshToken = p.getString(sessionKey(sessionId, "refresh_token"), null) ?: return null
-        val userName = p.getString(sessionKey(sessionId, "user_name"), null) ?: return null
-        val userId = p.getString(sessionKey(sessionId, "user_id"), null) ?: return null
+        val rawAccess = p.getString(sessionKey(sessionId, "access_token"), null) ?: return null
+        val rawRefresh = p.getString(sessionKey(sessionId, "refresh_token"), null) ?: return null
+        val rawUser = p.getString(sessionKey(sessionId, "user_name"), null) ?: return null
+        val rawUserId = p.getString(sessionKey(sessionId, "user_id"), null) ?: return null
         val createdAt = p.getLong(sessionKey(sessionId, "created_at"), 0)
+
+        val accessToken = com.application.jomato.utils.SecureStorage.decrypt(rawAccess)
+        val refreshToken = com.application.jomato.utils.SecureStorage.decrypt(rawRefresh)
+        val userName = com.application.jomato.utils.SecureStorage.decrypt(rawUser)
+        val userId = com.application.jomato.utils.SecureStorage.decrypt(rawUserId)
+
         return ZomatoSession(sessionId, createdAt, accessToken, refreshToken, userName, userId)
     }
 
@@ -74,13 +80,15 @@ object ZomatoManager : BaseSessionManager<ZomatoSession>() {
     fun saveFoodRescueState(context: Context, essentials: TabbedHomeEssentials, location: UserLocation) {
         FileLogger.log(context, TAG, "Saving FR state | location: ${location.name}")
         try {
+            val encEssentials = com.application.jomato.utils.SecureStorage.encrypt(json.encodeToString(essentials))
+            val encLocation = com.application.jomato.utils.SecureStorage.encrypt(json.encodeToString(location))
             prefs(context).edit()
-                .putString(frKey("fr_essentials"), json.encodeToString(essentials))
-                .putString(frKey("fr_location"), json.encodeToString(location))
+                .putString(frKey("fr_essentials"), encEssentials)
+                .putString(frKey("fr_location"), encLocation)
                 .putLong(frKey("fr_started_at"), System.currentTimeMillis())
                 .putLong(frKey("fr_last_notification_at"), 0)
                 .apply()
-            FileLogger.log(context, TAG, "FR state saved")
+            FileLogger.log(context, TAG, "FR state saved (encrypted)")
         } catch (e: Exception) {
             FileLogger.log(context, TAG, "Failed to save FR state | ${e.message}", e)
         }
@@ -88,9 +96,11 @@ object ZomatoManager : BaseSessionManager<ZomatoSession>() {
 
     fun getFoodRescueState(context: Context): FoodRescueState? {
         val p = prefs(context)
-        val essJson = p.getString(frKey("fr_essentials"), null) ?: return null
-        val locJson = p.getString(frKey("fr_location"), null) ?: return null
+        val rawEss = p.getString(frKey("fr_essentials"), null) ?: return null
+        val rawLoc = p.getString(frKey("fr_location"), null) ?: return null
         return try {
+            val essJson = com.application.jomato.utils.SecureStorage.decrypt(rawEss)
+            val locJson = com.application.jomato.utils.SecureStorage.decrypt(rawLoc)
             val state = FoodRescueState(
                 essentials = json.decodeFromString(essJson),
                 location = json.decodeFromString(locJson),
@@ -147,8 +157,13 @@ object ZomatoManager : BaseSessionManager<ZomatoSession>() {
 
     fun saveOrderClaimedState(context: Context, identifier: String, orderDetails: OrderDetails?) {
         FileLogger.log(context, TAG, "Saving order claimed state | id: $identifier | hasPayload: ${orderDetails != null}")
+        val payload = if (orderDetails != null) {
+            com.application.jomato.utils.SecureStorage.encrypt(json.encodeToString(orderDetails))
+        } else {
+            ""
+        }
         prefs(context).edit()
-            .putString(frKey("fr_order_claimed_$identifier"), if (orderDetails != null) json.encodeToString(orderDetails) else "")
+            .putString(frKey("fr_order_claimed_$identifier"), payload)
             .apply()
     }
 
@@ -157,9 +172,10 @@ object ZomatoManager : BaseSessionManager<ZomatoSession>() {
         return prefs(context).all.entries
             .filter { it.key.startsWith(keyPrefix) }
             .mapNotNull { entry ->
-                val payload = entry.value as? String ?: return@mapNotNull null
-                if (payload.isEmpty()) return@mapNotNull null
+                val rawPayload = entry.value as? String ?: return@mapNotNull null
+                if (rawPayload.isEmpty()) return@mapNotNull null
                 try {
+                    val payload = com.application.jomato.utils.SecureStorage.decrypt(rawPayload)
                     json.decodeFromString<OrderDetails>(payload)
                 } catch (e: Exception) {
                     FileLogger.log(context, TAG, "Failed to parse claimed order: ${e.message}")
